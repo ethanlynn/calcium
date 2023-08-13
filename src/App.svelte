@@ -23,9 +23,7 @@
 </script>
 
 <div class="bg-slate-800 flex flex-col extension-container">
-  <div
-    class="px-4 pt-4 pb-2 bg-slate-100 focus-within:border-slate-400 border-b-8 border-transparent"
-  >
+  <div class="px-8 py-4 bg-slate-100">
     <label class="relative block text-slate-800">
       <div class="absolute h-full left-0">
         <svg
@@ -95,6 +93,7 @@
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
           class="fill-slate-400 w-10 h-10"
+          class:fill-lime-300={i === selectedSearchResult}
         >
           <path
             fill-rule="evenodd"

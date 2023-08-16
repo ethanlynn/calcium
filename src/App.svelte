@@ -12,7 +12,7 @@
 
   type SearchResult = SearchItem;
 
-  const search = (
+  const searchTabs = (
     index: MiniSearch<SearchItem>,
     pattern: string,
   ): SearchResult[] =>
@@ -39,12 +39,21 @@
     },
   });
 
-  $: searchResults = search(searchIndex, searchInputValue);
+  let searchResults: SearchResult[];
   $: {
+    searchResults = searchTabs(searchIndex, searchInputValue);
     if (selectedSearchResult >= searchResults.length) {
       selectedSearchResult = Math.max(searchResults.length - 1, 0);
     }
   }
+
+  const acceptSearchResult = async (i: number) => {
+    const tabId = searchResults[i]?.id;
+    if (tabId) {
+      chrome.tabs.update(tabId, { selected: true });
+      window.close();
+    }
+  };
 
   const onKeyDown = (event: KeyboardEvent) => {
     switch (event.key) {
@@ -60,35 +69,33 @@
         event.preventDefault();
         return false;
       case "Enter":
-        const tabId = searchResults[selectedSearchResult]?.id;
-        if (tabId) {
-          chrome.tabs.update(tabId, { selected: true });
-        }
+        acceptSearchResult(selectedSearchResult);
       default:
         return true;
-    }
-  };
-
-  const onClickSearchResult = (i: number) => {
-    const tabId = searchResults[i]?.id;
-    if (tabId) {
-      chrome.tabs.update(tabId, { selected: true });
     }
   };
 
   onMount(async () => {
     searchInput.focus();
 
-    const tabs = await chrome.tabs.query({});
-    searchIndex.addAll(
-      tabs.map((tab) => ({
-        id: tab.id,
-        url: tab.url,
-        title: tab.title,
-        text: "",
-        favIconUrl: tab.favIconUrl,
-      })),
+    const tabs = await chrome.tabs.query({
+      url: ["http://*/*", "https://*/*"],
+    });
+    const searchItems = await Promise.all(
+      tabs.map(async (tab) => {
+        const text = await chrome.tabs.sendMessage(tab.id, {
+          type: "GET_TEXT",
+        });
+        return {
+          id: tab.id,
+          url: tab.url,
+          title: tab.title,
+          favIconUrl: tab.favIconUrl,
+          text,
+        };
+      }),
     );
+    searchIndex.addAll(searchItems);
   });
 </script>
 
@@ -121,11 +128,11 @@
     </label>
   </div>
   <div class="search-results">
-    {#each searchResults as { title, url, favIconUrl }, i}
-      <div
+    {#each searchResults as { title, url, favIconUrl, text }, i}
+      <button
         class="search-result"
         class:selected={i === selectedSearchResult}
-        on:click={() => onClickSearchResult(i)}
+        on:click={() => acceptSearchResult(i)}
       >
         <header class="search-result-header">
           {#if favIconUrl}
@@ -152,7 +159,7 @@
             style:width="20px"
             style:height="20px"
             fill={i === selectedSearchResult
-              ? "var(--pink-400)"
+              ? "var(--blue-400)"
               : "var(--gray-400)"}
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
@@ -169,8 +176,9 @@
             />
           </svg>
         </header>
-        <p class="search-result-url">{url}</p>
-      </div>
+        <span class="search-result-url">{url}</span>
+        <span class="search-result-matches">{text}</span>
+      </button>
     {/each}
   </div>
 </div>
@@ -208,7 +216,9 @@
     appearance: none;
     background: transparent;
     width: 100%;
-    padding-left: 36px;
+    padding: 0 0 0 36px;
+    outline: none;
+    border: none;
     font-size: 18px;
     line-height: 32px;
     color: var(--gray-800);
@@ -224,18 +234,32 @@
 
   .search-results {
     display: flex;
+    position: relative;
     flex-direction: column;
+    flex: 1;
     padding: 8px;
     gap: 8px;
+    overflow-y: scroll;
+  }
+
+  .search-results::after {
+    content: "";
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    z-index: 10;
+    background: linear-gradient(to bottom, transparent, var(--gray-800));
   }
 
   .search-result {
+    all: unset;
     display: flex;
     flex-direction: column;
     background: var(--gray-700);
     padding: 8px;
     cursor: pointer;
-    user-select: none;
     border-radius: 4px;
     border: 2px solid transparent;
   }
@@ -247,21 +271,44 @@
   }
 
   .search-result.selected {
-    border-color: var(--pink-400);
+    border-color: var(--blue-400);
   }
 
   .search-result-title {
     flex: 1;
     font-size: 14px;
+    line-height: 20px;
     color: var(--gray-200);
+    margin: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .search-result-url {
     flex: 1;
     font-size: 14px;
+    line-height: 20px;
     color: var(--gray-400);
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  .search-result-matches {
+    color: var(--gray-400);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+    font-size: 14px;
+    line-height: 20px;
+    height: 0;
+  }
+
+  .search-result.selected .search-result-matches {
+    height: 60px;
   }
 </style>

@@ -1,31 +1,38 @@
 import MiniSearch from "minisearch";
-import SearchAdapter, { type SearchResult } from "./base";
+import { Adapter, type SearchResult } from "./base";
 
-class MDNSearchAdapter extends SearchAdapter {
-  searchIndex: MiniSearch<SearchResult>;
+const mdnUrl = "https://developer.mozilla.org/";
+
+export class MDNAdapter extends Adapter {
+  searchIndex: MiniSearch<{ title: string; url: string }>;
 
   constructor() {
     super();
+    this.tag = "mdn";
+    this.url = mdnUrl;
     this.searchIndex = new MiniSearch({
       fields: ["title", "url"],
       storeFields: ["title", "url"],
     });
   }
 
-  async initialize() {
-    const response = await fetch(
-      "https://developer.mozilla.org/en-US/search-index.json",
+  async init() {
+    const response = await fetch(`${mdnUrl}en-US/search-index.json`);
+    const pages = (await response.json()) as { title: string; url: string }[];
+    console.log(pages);
+    this.searchIndex.addAll(
+      pages.map(({ title, url }) => ({ id: url, title, url })).slice(0, 1000),
     );
-    const pages = await response.json();
-    this.searchIndex.addAll(pages);
   }
 
-  search(pattern: string): SearchResult[] {
+  async search(pattern: string): Promise<SearchResult[]> {
     return this.searchIndex.search(pattern).map((result) => ({
-      icon: "https://developermozz",
       title: result.title,
       url: result.url,
-      preview: undefined,
+      acceptAction: {
+        type: "link",
+        href: result.url,
+      },
     }));
   }
 }

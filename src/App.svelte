@@ -1,27 +1,32 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import MiniSearch from "minisearch";
+  import { type Adapter, MDNAdapter, type SearchResult } from "./lib/adapters";
 
   type SearchItem = {
     id: number;
     url: string;
     title: string;
     text: string;
-    favIconUrl: string;
+    iconUrl: string;
   };
 
-  type SearchResult = SearchItem;
+  const adapters = [new MDNAdapter()];
+  const adaptersByTag: { [tag: string]: Adapter } = {};
+  for (const adapter of adapters) {
+    adaptersByTag[adapter.tag] = adapter;
+  }
 
   const searchTabs = (
     index: MiniSearch<SearchItem>,
     pattern: string,
   ): SearchResult[] =>
     index.search(pattern).map((result) => ({
-      id: result.id,
+      tabId: result.tabId,
       url: result.url,
       title: result.title,
       text: result.text,
-      favIconUrl: result.favIconUrl,
+      iconUrl: result.iconUrl,
     }));
 
   let searchInput = undefined;
@@ -31,7 +36,7 @@
 
   let searchIndex = new MiniSearch<SearchItem>({
     fields: ["url", "title", "text"],
-    storeFields: ["id", "url", "title", "text", "favIconUrl"],
+    storeFields: ["id", "url", "title", "text", "iconUrl"],
     searchOptions: {
       boost: { title: 2 },
       prefix: true,
@@ -39,16 +44,33 @@
     },
   });
 
-  let searchResults: SearchResult[];
+  let searchResults: SearchResult[] = [];
   $: {
-    searchResults = searchTabs(searchIndex, searchInputValue);
-    if (selectedSearchResult >= searchResults.length) {
-      selectedSearchResult = Math.max(searchResults.length - 1, 0);
+    /*searchResults = searchTabs(searchIndex, searchInputValue);
+    if (searchInputValue.startsWith("@")) {
+      const tag = searchInputValue.split(" ")[0].slice(1);
+      const adapter = adaptersByTag[tag];
+      if (adapter) {
+        searchResults = adapter.search(searchInputValue);
+      } else {
+        searchResults = [];
+      }
+    }*/
+    adaptersByTag["mdn"].search(searchInputValue).then((results) => {
+      searchResults = results;
+    });
+  }
+  $: {
+    if (
+      searchResults === undefined ||
+      selectedSearchResult >= searchResults.length
+    ) {
+      selectedSearchResult = 0;
     }
   }
 
   const acceptSearchResult = async (i: number) => {
-    const tabId = searchResults[i]?.id;
+    const tabId = searchResults[i]?.tabId;
     if (tabId) {
       chrome.tabs.update(tabId, { selected: true });
       window.close();
@@ -78,24 +100,26 @@
   onMount(async () => {
     searchInput.focus();
 
-    const tabs = await chrome.tabs.query({
-      url: ["http://*/*", "https://*/*"],
-    });
-    const searchItems = await Promise.all(
-      tabs.map(async (tab) => {
-        const text = await chrome.tabs.sendMessage(tab.id, {
-          type: "GET_TEXT",
-        });
-        return {
-          id: tab.id,
-          url: tab.url,
-          title: tab.title,
-          favIconUrl: tab.favIconUrl,
-          text,
-        };
-      }),
-    );
-    searchIndex.addAll(searchItems);
+    // const tabs = await chrome.tabs.query({
+    //   url: ["http://*/*", "https://*/*"],
+    // });
+    // const searchItems = await Promise.all(
+    //   tabs.map(async (tab) => {
+    //     const text = await chrome.tabs.sendMessage(tab.id, {
+    //       type: "GET_TEXT",
+    //     });
+    //     return {
+    //       tabId: tab.id,
+    //       url: tab.url,
+    //       title: tab.title,
+    //       iconUrl: tab.favIconUrl,
+    //       text,
+    //     };
+    //   }),
+    // );
+    // searchIndex.addAll(searchItems);
+
+    await Promise.all(adapters.map((adapter) => adapter.init()));
   });
 </script>
 
@@ -128,15 +152,15 @@
     </label>
   </div>
   <div class="search-results">
-    {#each searchResults as { title, url, favIconUrl, text }, i}
+    {#each searchResults as { title, url, iconUrl, preview }, i}
       <button
         class="search-result"
         class:selected={i === selectedSearchResult}
         on:click={() => acceptSearchResult(i)}
       >
         <header class="search-result-header">
-          {#if favIconUrl}
-            <img width="16px" height="16px" alt={title} src={favIconUrl} />
+          {#if iconUrl}
+            <img width="16px" height="16px" alt={title} src={iconUrl} />
           {:else}
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -177,7 +201,7 @@
           </svg>
         </header>
         <span class="search-result-url">{url}</span>
-        <span class="search-result-matches">{text}</span>
+        <span class="search-result-preview">{preview}</span>
       </button>
     {/each}
   </div>
@@ -295,7 +319,7 @@
     text-overflow: ellipsis;
   }
 
-  .search-result-matches {
+  .search-result-preview {
     color: var(--gray-400);
     overflow: hidden;
     display: -webkit-box;
@@ -308,7 +332,7 @@
     height: 0;
   }
 
-  .search-result.selected .search-result-matches {
+  .search-result.selected .search-result-preview {
     height: 60px;
   }
 </style>

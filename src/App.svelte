@@ -48,6 +48,14 @@
     },
   });
 
+  const escape = (html: string) =>
+    html
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
   let searchResults: SearchResult[] = [];
   $: {
     const match = searchInputValue.match(/^@([a-z]+)(.*)$/);
@@ -56,14 +64,16 @@
       const pattern = match[2];
       const adapter = adaptersByTag[tag];
       if (adapter !== undefined) {
-        searchInputHighlighted = `<span class="primary">@${tag}</span>${pattern}`;
+        searchInputHighlighted = `<span class="primary">@${tag}</span>${escape(
+          pattern,
+        )}`;
         adapter.search(pattern.trim()).then((results) => {
           searchResults = results;
         });
         break $;
       }
     }
-    searchInputHighlighted = searchInputValue;
+    searchInputHighlighted = escape(searchInputValue);
     searchResults = searchTabs(searchIndex, searchInputValue);
   }
   $: {
@@ -234,6 +244,8 @@
     font-size: 18px;
     line-height: 32px;
     height: 32px;
+    font-family: inherit;
+    white-space: pre;
   }
 
   .search-input-highlighted :global(.primary) {
@@ -248,13 +260,18 @@
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
+    padding: 12px;
     appearance: none;
     background: transparent;
     outline: none;
     border: none;
+    font-family: inherit;
+    font-size: 18px;
+    line-height: 32px;
     color: transparent;
+    caret-color: var(--gray-800);
   }
 
   .search-input:focus {

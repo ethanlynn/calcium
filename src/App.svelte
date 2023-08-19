@@ -22,15 +22,19 @@
     pattern: string,
   ): SearchResult[] =>
     index.search(pattern).map((result) => ({
-      tabId: result.tabId,
       url: result.url,
       title: result.title,
       text: result.text,
       iconUrl: result.iconUrl,
+      acceptAction: {
+        type: "tab",
+        tabId: result.tabId,
+      },
     }));
 
   let searchInput = undefined;
   let searchInputValue = "";
+  let searchInputSegments = [];
 
   let selectedSearchResult = 0;
 
@@ -46,19 +50,30 @@
 
   let searchResults: SearchResult[] = [];
   $: {
-    /*searchResults = searchTabs(searchIndex, searchInputValue);
-    if (searchInputValue.startsWith("@")) {
+    //searchResults = searchTabs(searchIndex, searchInputValue);
+    let tag = undefined;
+    const terms = searchInputValue.split(/\s+/);
+    if (/^@[a-z]+$/.test(terms[0])) {
+      tag = terms.shift();
+    }
+    const segments = [];
+
+    if (searchInputValue.startsWith("\b@[a-z]+\b")) {
       const tag = searchInputValue.split(" ")[0].slice(1);
       const adapter = adaptersByTag[tag];
       if (adapter) {
-        searchResults = adapter.search(searchInputValue);
+        const pattern = searchInputValue.slice(tag.length + 1);
+        adapter.search(pattern).then((results) => {
+          searchResults = results;
+        });
       } else {
         searchResults = [];
       }
-    }*/
+    }
+    /*
     adaptersByTag["mdn"].search(searchInputValue).then((results) => {
       searchResults = results;
-    });
+    });*/
   }
   $: {
     if (
@@ -70,10 +85,17 @@
   }
 
   const acceptSearchResult = async (i: number) => {
-    const tabId = searchResults[i]?.tabId;
-    if (tabId) {
-      chrome.tabs.update(tabId, { selected: true });
-      window.close();
+    const acceptAction = searchResults[i].acceptAction;
+    switch (acceptAction.type) {
+      case "tab":
+        chrome.tabs.update(acceptAction.tabId, { selected: true });
+        window.close();
+        break;
+      case "link":
+        chrome.tabs.create({ url: acceptAction.href });
+        break;
+      case "copy":
+        break;
     }
   };
 
@@ -126,31 +148,23 @@
 <svelte:window on:keydown={onKeyDown} />
 
 <div class="popup">
-  <div class="search">
-    <label class="search-control">
-      <svg
-        class="search-icon"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-        />
-      </svg>
-      <input
-        bind:this={searchInput}
-        bind:value={searchInputValue}
-        type="text"
-        placeholder="Search..."
-        class="search-input"
-      />
-    </label>
-  </div>
+  <label class="search">
+    <div class="search-input-segments">
+      {#each searchInputSegments as segment}
+        {#if segment.color !== undefined}
+          <span class={segment.color}>{segment.text}</span>
+        {:else}
+          {segment.text}
+        {/if}
+      {/each}
+    </div>
+    <input
+      bind:this={searchInput}
+      bind:value={searchInputValue}
+      type="text"
+      class="search-input"
+    />
+  </label>
   <div class="search-results">
     {#each searchResults as { title, url, iconUrl, preview }, i}
       <button
@@ -201,7 +215,9 @@
           </svg>
         </header>
         <span class="search-result-url">{url}</span>
-        <span class="search-result-preview">{preview}</span>
+        {#if preview !== undefined}
+          <span class="search-result-preview">{preview}</span>
+        {/if}
       </button>
     {/each}
   </div>
@@ -217,39 +233,39 @@
   }
 
   .search {
+    display: block;
+    position: relative;
     background: var(--gray-100);
     padding: 12px;
   }
 
-  .search-control {
-    position: relative;
+  .search-input-segments {
     display: block;
     color: var(--gray-800);
+    font-size: 18px;
+    line-height: 32px;
+    height: 32px;
   }
 
-  .search-icon {
-    position: absolute;
-    height: 24px;
-    width: 24px;
-    top: 50%;
-    margin-top: -12px;
-    left: 0;
+  .search-input-segments .primary {
+    color: var(--blue-400);
+  }
+
+  .search-input-segments .secondary {
+    color: var(--pink-400);
   }
 
   .search-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     appearance: none;
     background: transparent;
-    width: 100%;
-    padding: 0 0 0 36px;
     outline: none;
     border: none;
-    font-size: 18px;
-    line-height: 32px;
-    color: var(--gray-800);
-  }
-
-  .search-input::placeholder {
-    color: var(--gray-400);
+    color: transparent;
   }
 
   .search-input:focus {

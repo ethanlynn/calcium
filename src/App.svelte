@@ -28,13 +28,13 @@
       iconUrl: result.iconUrl,
       acceptAction: {
         type: "tab",
-        tabId: result.tabId,
+        tabId: result.id,
       },
     }));
 
   let searchInput = undefined;
   let searchInputValue = "";
-  let searchInputSegments = [];
+  let searchInputHighlighted = "";
 
   let selectedSearchResult = 0;
 
@@ -50,30 +50,21 @@
 
   let searchResults: SearchResult[] = [];
   $: {
-    //searchResults = searchTabs(searchIndex, searchInputValue);
-    let tag = undefined;
-    const terms = searchInputValue.split(/\s+/);
-    if (/^@[a-z]+$/.test(terms[0])) {
-      tag = terms.shift();
-    }
-    const segments = [];
-
-    if (searchInputValue.startsWith("\b@[a-z]+\b")) {
-      const tag = searchInputValue.split(" ")[0].slice(1);
+    const match = searchInputValue.match(/^@([a-z]+)(.*)$/);
+    if (match !== null) {
+      const tag = match[1];
+      const pattern = match[2];
       const adapter = adaptersByTag[tag];
-      if (adapter) {
-        const pattern = searchInputValue.slice(tag.length + 1);
-        adapter.search(pattern).then((results) => {
+      if (adapter !== undefined) {
+        searchInputHighlighted = `<span class="primary">@${tag}</span>${pattern}`;
+        adapter.search(pattern.trim()).then((results) => {
           searchResults = results;
         });
-      } else {
-        searchResults = [];
+        break $;
       }
     }
-    /*
-    adaptersByTag["mdn"].search(searchInputValue).then((results) => {
-      searchResults = results;
-    });*/
+    searchInputHighlighted = searchInputValue;
+    searchResults = searchTabs(searchIndex, searchInputValue);
   }
   $: {
     if (
@@ -122,24 +113,30 @@
   onMount(async () => {
     searchInput.focus();
 
-    // const tabs = await chrome.tabs.query({
-    //   url: ["http://*/*", "https://*/*"],
-    // });
-    // const searchItems = await Promise.all(
-    //   tabs.map(async (tab) => {
-    //     const text = await chrome.tabs.sendMessage(tab.id, {
-    //       type: "GET_TEXT",
-    //     });
-    //     return {
-    //       tabId: tab.id,
-    //       url: tab.url,
-    //       title: tab.title,
-    //       iconUrl: tab.favIconUrl,
-    //       text,
-    //     };
-    //   }),
-    // );
-    // searchIndex.addAll(searchItems);
+    const tabs = await chrome.tabs.query({
+      url: ["http://*/*", "https://*/*"],
+    });
+    const searchItems = await Promise.all(
+      tabs.map(async (tab) => {
+        try {
+          const text = await chrome.tabs.sendMessage(tab.id, {
+            type: "GET_TEXT",
+          });
+          return {
+            id: tab.id,
+            url: tab.url,
+            title: tab.title,
+            iconUrl: tab.favIconUrl,
+            text,
+          };
+        } catch {
+          return undefined;
+        }
+      }),
+    );
+    searchIndex.addAll(
+      searchItems.filter((searchItem) => searchItem !== undefined),
+    );
 
     await Promise.all(adapters.map((adapter) => adapter.init()));
   });
@@ -149,15 +146,7 @@
 
 <div class="popup">
   <label class="search">
-    <div class="search-input-segments">
-      {#each searchInputSegments as segment}
-        {#if segment.color !== undefined}
-          <span class={segment.color}>{segment.text}</span>
-        {:else}
-          {segment.text}
-        {/if}
-      {/each}
-    </div>
+    <div class="search-input-highlighted">{@html searchInputHighlighted}</div>
     <input
       bind:this={searchInput}
       bind:value={searchInputValue}
@@ -239,7 +228,7 @@
     padding: 12px;
   }
 
-  .search-input-segments {
+  .search-input-highlighted {
     display: block;
     color: var(--gray-800);
     font-size: 18px;
@@ -247,11 +236,11 @@
     height: 32px;
   }
 
-  .search-input-segments .primary {
+  .search-input-highlighted :global(.primary) {
     color: var(--blue-400);
   }
 
-  .search-input-segments .secondary {
+  .search-input-highlighted :global(.secondary) {
     color: var(--pink-400);
   }
 

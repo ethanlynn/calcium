@@ -3,13 +3,14 @@ import { Adapter, type SearchResult } from "./base";
 
 const mdnUrl = "https://developer.mozilla.org";
 
+type MDNSearchItem = { title: string; url: string };
+
 export class MDNAdapter extends Adapter {
-  searchIndex: MiniSearch<{ title: string; url: string }>;
+  searchIndex: MiniSearch<MDNSearchItem>;
 
   constructor() {
     super();
     this.tag = "mdn";
-    this.url = mdnUrl;
     this.searchIndex = new MiniSearch({
       fields: ["title", "url"],
       storeFields: ["title", "url"],
@@ -33,13 +34,13 @@ export class MDNAdapter extends Adapter {
     return this.searchIndex
       .search(pattern)
       .slice(0, 10)
-      .map((result) => ({
-        iconUrl: "https://developer.mozilla.org/favicon.ico",
-        title: result.title,
-        url: result.url,
+      .map((item) => ({
+        iconUrl: `${mdnUrl}/favicon.ico`,
+        title: item.title,
+        url: item.url,
         acceptAction: {
           type: "link",
-          href: `${mdnUrl}${result.url}`,
+          href: `${mdnUrl}${item.url}`,
         },
       }));
   }

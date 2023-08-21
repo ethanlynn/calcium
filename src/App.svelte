@@ -1,7 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import MiniSearch from "minisearch";
-  import { type Adapter, MDNAdapter, type SearchResult } from "./lib/adapters";
+  import {
+    type Adapter,
+    MDNAdapter,
+    CanIUseAdapter,
+    type SearchResult,
+  } from "./lib/adapters";
 
   type SearchItem = {
     id: number;
@@ -11,7 +16,7 @@
     iconUrl: string;
   };
 
-  const adapters = [new MDNAdapter()];
+  const adapters = [new MDNAdapter(), new CanIUseAdapter()];
   const adaptersByTag: { [tag: string]: Adapter } = {};
   for (const adapter of adapters) {
     adaptersByTag[adapter.tag] = adapter;
@@ -196,7 +201,7 @@
             style:width="20px"
             style:height="20px"
             fill={i === selectedSearchResult
-              ? "var(--blue-400)"
+              ? "var(--blue-500)"
               : "var(--gray-400)"}
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
@@ -249,7 +254,7 @@
   }
 
   .search-input-highlighted :global(.primary) {
-    color: var(--blue-400);
+    color: var(--blue-500);
   }
 
   .search-input-highlighted :global(.secondary) {
@@ -317,7 +322,7 @@
   }
 
   .search-result.selected {
-    border-color: var(--blue-400);
+    border-color: var(--blue-500);
   }
 
   .search-result-title {

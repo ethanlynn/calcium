@@ -13,20 +13,10 @@ export type SearchResult = {
 
 export type Color = "primary" | "secondary";
 
-export type HighlightSegment = {
-  text: string;
-  color?: Color;
-};
-
 export abstract class Adapter {
   tag: string;
-  url?: string;
 
   abstract init(): Promise<void>;
-
-  highlight(pattern: string): HighlightSegment[] {
-    return [{ text: pattern }];
-  }
 
   abstract search(pattern: string): Promise<SearchResult[]>;
 }

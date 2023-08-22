@@ -34,17 +34,16 @@ export class MDNAdapter extends Adapter {
 
   async init() {
     const { adapters_mdn_data: data, adapters_mdn_expiresAt: expiresAt } =
-      (await chrome.storage.local.get({
-        adapters_mdn_data: undefined,
-        adapters_mdn_expiresAt: undefined,
-      })) as {
+      (await chrome.storage.local.get(
+        ["adapters_mdn_data", "adapters_mdn_expiresAt"]
+      )) as {
         adapters_mdn_data?: string;
-        adapters_mdn_expiresAt?: string;
+        adapters_mdn_expiresAt?: number;
       };
     if (
       data !== undefined &&
       expiresAt !== undefined &&
-      Date.parse(expiresAt) > Date.now()
+      expiresAt > Date.now()
     ) {
       this.searchIndex = MiniSearch.loadJSON(data, miniSearchOptions);
     } else {

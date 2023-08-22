@@ -94,14 +94,14 @@ export class CanIUseAdapter extends Adapter {
     const {
       adapters_caniuse_expiresAt: expiresAt,
       adapters_caniuse_data: data,
-    } = (await chrome.storage.local.get({
-      adapters_caniuse_expiresAt: undefined,
-      adapters_caniuse_data: undefined,
-    })) as {
-      adapters_caniuse_expiresAt?: string;
+    } = (await chrome.storage.local.get([
+      "adapters_caniuse_expiresAt",
+      "adapters_caniuse_data",
+    ])) as {
+      adapters_caniuse_expiresAt?: number;
       adapters_caniuse_data?: string;
     };
-    if (data && expiresAt !== undefined && Date.parse(expiresAt) > Date.now()) {
+    if (data && expiresAt !== undefined && expiresAt > Date.now()) {
       this.searchIndex = MiniSearch.loadJSON(data, miniSearchOptions);
     } else {
       const response = await fetch(

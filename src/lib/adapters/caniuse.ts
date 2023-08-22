@@ -1,5 +1,5 @@
 import MiniSearch from "minisearch";
-import { Adapter, type SearchResult } from "./base";
+import { Adapter, type SearchResult, type SearchOptions } from "./base";
 
 type Browser =
   | "ie"
@@ -63,44 +63,71 @@ type CanIUseSearchItem = {
   description: string;
 };
 
+type CanIUseAdapterOptions = {
+  cacheDuration?: number;
+};
+
 const canIUseUrl = "https://caniuse.com";
 
+const miniSearchOptions = {
+  fields: ["title"],
+  storeFields: ["title"],
+  searchOptions: {
+    boost: { title: 2 },
+    prefix: true,
+    fuzzy: 0.2,
+  },
+};
+
 export class CanIUseAdapter extends Adapter {
+  cacheDuration: number;
   searchIndex: MiniSearch<CanIUseSearchItem>;
 
-  constructor() {
+  constructor({
+    cacheDuration = 1000 * 60 * 60 * 24,
+  }: CanIUseAdapterOptions = {}) {
     super();
-    this.tag = "caniuse";
-    this.searchIndex = new MiniSearch({
-      fields: ["title", "url"],
-      storeFields: ["title", "url"],
-      searchOptions: {
-        boost: { title: 2 },
-        prefix: true,
-        fuzzy: 0.2,
-      },
-    });
+    this.cacheDuration = cacheDuration;
   }
 
   async init() {
-    const response = await fetch(
-      "https://raw.githubusercontent.com/Fyrd/caniuse/main/data.json",
-    );
-    const data = (await response.json()) as CanIUseData;
-    const searchItems = Object.entries(data.data).map(
-      ([featureId, { title, description }]) => ({
-        id: featureId,
-        title,
-        description,
-      }),
-    );
-    this.searchIndex.addAll(searchItems);
+    const {
+      adapters_caniuse_expiresAt: expiresAt,
+      adapters_caniuse_data: data,
+    } = (await chrome.storage.local.get({
+      adapters_caniuse_expiresAt: undefined,
+      adapters_caniuse_data: undefined,
+    })) as {
+      adapters_caniuse_expiresAt?: string;
+      adapters_caniuse_data?: string;
+    };
+    if (data && expiresAt !== undefined && Date.parse(expiresAt) > Date.now()) {
+      this.searchIndex = MiniSearch.loadJSON(data, miniSearchOptions);
+    } else {
+      const response = await fetch(
+        "https://raw.githubusercontent.com/Fyrd/caniuse/main/data.json",
+      );
+      const data = (await response.json()) as CanIUseData;
+      const items = Object.entries(data.data).map(
+        ([featureId, { title, description }]) => ({
+          id: featureId,
+          title,
+          description,
+        }),
+      );
+      this.searchIndex = new MiniSearch(miniSearchOptions);
+      this.searchIndex.addAll(items);
+      await chrome.storage.local.set({
+        adapters_caniuse_expiresAt: Date.now() + this.cacheDuration,
+        adapters_caniuse_data: JSON.stringify(this.searchIndex),
+      });
+    }
   }
 
-  async search(pattern: string): Promise<SearchResult[]> {
+  async search({ pattern, limit }: SearchOptions): Promise<SearchResult[]> {
     return this.searchIndex
       .search(pattern)
-      .slice(0, 10)
+      .slice(0, limit)
       .map((item) => {
         const url = `${canIUseUrl}/${item.id}`;
         return {

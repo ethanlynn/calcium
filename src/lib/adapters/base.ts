@@ -11,12 +11,13 @@ export type SearchResult = {
   acceptAction: AcceptAction;
 };
 
-export type Color = "primary" | "secondary";
+export type SearchOptions = {
+  pattern: string;
+  limit?: number;
+};
 
 export abstract class Adapter {
-  tag: string;
-
   abstract init(): Promise<void>;
 
-  abstract search(pattern: string): Promise<SearchResult[]>;
+  abstract search(options: SearchOptions): Promise<SearchResult[]>;
 }

@@ -1,57 +1,26 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import MiniSearch from "minisearch";
   import {
     type Adapter,
-    MDNAdapter,
-    CanIUseAdapter,
     type SearchResult,
+    BrowserAdapter,
+    CanIUseAdapter,
+    MDNAdapter,
+    NPMAdapter,
   } from "./lib/adapters";
 
-  type SearchItem = {
-    id: number;
-    url: string;
-    title: string;
-    text: string;
-    iconUrl: string;
+  const adapters: Record<string, { adapter: Adapter; initialized: boolean }> = {
+    default: { adapter: new BrowserAdapter(), initialized: false },
+    mdn: { adapter: new MDNAdapter(), initialized: false },
+    caniuse: { adapter: new CanIUseAdapter(), initialized: false },
+    npm: { adapter: new NPMAdapter(), initialized: false },
   };
-
-  const adapters = [new MDNAdapter(), new CanIUseAdapter()];
-  const adaptersByTag: { [tag: string]: Adapter } = {};
-  for (const adapter of adapters) {
-    adaptersByTag[adapter.tag] = adapter;
-  }
-
-  const searchTabs = (
-    index: MiniSearch<SearchItem>,
-    pattern: string,
-  ): SearchResult[] =>
-    index.search(pattern).map((result) => ({
-      url: result.url,
-      title: result.title,
-      text: result.text,
-      iconUrl: result.iconUrl,
-      acceptAction: {
-        type: "tab",
-        tabId: result.id,
-      },
-    }));
 
   let searchInput = undefined;
   let searchInputValue = "";
   let searchInputHighlighted = "";
 
   let selectedSearchResult = 0;
-
-  let searchIndex = new MiniSearch<SearchItem>({
-    fields: ["url", "title", "text"],
-    storeFields: ["id", "url", "title", "text", "iconUrl"],
-    searchOptions: {
-      boost: { title: 2 },
-      prefix: true,
-      fuzzy: 0.2,
-    },
-  });
 
   const escape = (html: string) =>
     html
@@ -64,22 +33,31 @@
   let searchResults: SearchResult[] = [];
   $: {
     const match = searchInputValue.match(/^@([a-z]+)(.*)$/);
-    if (match !== null) {
-      const tag = match[1];
-      const pattern = match[2];
-      const adapter = adaptersByTag[tag];
-      if (adapter !== undefined) {
-        searchInputHighlighted = `<span class="primary">@${tag}</span>${escape(
-          pattern,
-        )}`;
-        adapter.search(pattern.trim()).then((results) => {
-          searchResults = results;
-        });
-        break $;
-      }
+    const adapterId =
+      match !== null && Object.hasOwn(adapters, match[1])
+        ? match[1]
+        : "default";
+    const pattern = match !== null ? match[2] : searchInputValue;
+    if (adapterId !== "default") {
+      searchInputHighlighted = `<span class="primary">@${adapterId}</span>${escape(
+        pattern,
+      )}`;
+    } else {
+      searchInputHighlighted = escape(searchInputValue);
     }
-    searchInputHighlighted = escape(searchInputValue);
-    searchResults = searchTabs(searchIndex, searchInputValue);
+    const { adapter, initialized } = adapters[adapterId];
+
+    // TODO: Correctly time/sequence this asynchronouse result.
+    (async () => {
+      if (!initialized) {
+        await adapter.init();
+        adapters[adapterId].initialized = true;
+      }
+      searchResults = await adapter.search({
+        pattern: pattern.trim(),
+        limit: 5,
+      });
+    })();
   }
   $: {
     if (
@@ -127,33 +105,6 @@
 
   onMount(async () => {
     searchInput.focus();
-
-    const tabs = await chrome.tabs.query({
-      url: ["http://*/*", "https://*/*"],
-    });
-    const searchItems = await Promise.all(
-      tabs.map(async (tab) => {
-        try {
-          const text = await chrome.tabs.sendMessage(tab.id, {
-            type: "GET_TEXT",
-          });
-          return {
-            id: tab.id,
-            url: tab.url,
-            title: tab.title,
-            iconUrl: tab.favIconUrl,
-            text,
-          };
-        } catch {
-          return undefined;
-        }
-      }),
-    );
-    searchIndex.addAll(
-      searchItems.filter((searchItem) => searchItem !== undefined),
-    );
-
-    await Promise.all(adapters.map((adapter) => adapter.init()));
   });
 </script>
 

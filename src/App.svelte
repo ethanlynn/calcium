@@ -31,6 +31,7 @@
       .replace(/'/g, "&#39;");
 
   let searchResults: SearchResult[] = [];
+
   $: {
     const match = searchInputValue.match(/^@([a-z]+)(.*)$/);
     const adapterId =
@@ -59,6 +60,7 @@
       });
     })();
   }
+
   $: {
     if (
       searchResults === undefined ||
@@ -241,7 +243,7 @@
     flex: 1;
     padding: 8px;
     gap: 8px;
-    overflow-y: scroll;
+    overflow-y: auto;
   }
 
   .search-results::after {

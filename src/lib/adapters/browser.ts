@@ -6,7 +6,7 @@ type SearchItem = {
   url: string;
   title: string;
   iconUrl: string;
-  text: string;
+  text?: string;
 };
 
 export class BrowserAdapter extends Adapter {
@@ -27,23 +27,24 @@ export class BrowserAdapter extends Adapter {
     });
     const searchItems = await Promise.all(
       tabs.map(async (tab) => {
+        let text: string;
         try {
-          const text = await chrome.tabs.sendMessage(tab.id, {
+          text = await chrome.tabs.sendMessage(tab.id, {
             type: "GET_TEXT",
           });
-          return {
-            id: tab.id,
-            url: tab.url,
-            title: tab.title,
-            iconUrl: tab.favIconUrl,
-            text,
-          };
         } catch {
-          return undefined;
+          text = undefined;
         }
+        return {
+          id: tab.id,
+          url: tab.url,
+          title: tab.title,
+          iconUrl: tab.favIconUrl,
+          text,
+        };
       }),
     );
-    this.searchIndex.addAll(searchItems.filter((item) => item !== undefined));
+    this.searchIndex.addAll(searchItems);
   }
 
   async search({ pattern, limit }: SearchOptions): Promise<SearchResult[]> {

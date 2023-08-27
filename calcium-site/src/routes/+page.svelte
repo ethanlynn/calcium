@@ -39,11 +39,6 @@
 </div>
 
 <style>
-  :global(:root) {
-    background: var(--gray-100);
-    color: var(--gray-800);
-  }
-
   .container {
     max-width: 704px;
     padding: 32px;

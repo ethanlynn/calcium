@@ -47,4 +47,7 @@ body {
   --blue-800: #1e40af;
   --blue-900: #1e3a8a;
   --blue-950: #172554;
+
+  background: var(--gray-100);
+  color: var(--gray-800);
 }

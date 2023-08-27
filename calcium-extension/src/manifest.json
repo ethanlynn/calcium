@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Sherlock",
-  "description": "The ultimate tab detective.",
+  "name": "Calcium",
+  "description": "A shell for the web.",
   "version": "1.0",
   "icons": {},
   "action": {

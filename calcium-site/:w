@@ -1,0 +1,55 @@
+<header>
+  <div class="prompt">&gt;</div>
+  <div>
+    <h1>Calcium</h1>
+    <p class="subtitle">A shell for the web.</p>
+  </div>
+</header>
+<ul class="highlights">
+  <li>Fast fuzzy-finding between browser tabs.</li>
+  <li>Jump to common documentation sources.</li>
+  <li>Integrations with your favorite platforms.</li>
+</ul>
+
+<style>
+  :global(:root) {
+    background: var(--gray-100);
+  }
+
+  header {
+    display: flex;
+    gap: 16px;
+    max-width: 960px;
+    align-items: center;
+    margin: 0 auto;
+  }
+
+  .prompt {
+    color: var(--gray-300);
+    font-size: 96px;
+    font-weight: bold;
+  }
+
+  h1 {
+    color: var(--gray-800);
+    font-size: 48px;
+    font-weight: bold;
+    margin: 0;
+  }
+
+  .subtitle {
+    color: var(--gray-500);
+    font-size: 24px;
+    margin: 0;
+  }
+
+  .highlights {
+    list-style: disc;
+  }
+
+  .highlights > li::before {
+    content: "\2022";
+    color: var(--blue-500);
+    margin-right: 8px;
+  }
+</style>

@@ -2,7 +2,7 @@
 
 ![Calcium Demo](calcium-site/static/demo.gif)
 
-🔎 Fuzzy-find on browser tabs, bookmarks, history
+🔎 Low latency fuzzy-find on browser tabs, bookmarks, history
 
 🏃 Search and jump to common developer docs
 

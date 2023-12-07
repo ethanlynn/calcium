@@ -8,7 +8,19 @@
 
 Coming soon...
 
+⚙️  Directives 
+
 🤖 AI clipboard
+
+## Usage
+
+- Open with `Cmd+Period`
+- Fuzzy search by tab title, URL, or any portion of visible text on a tab
+- A small list of experimental directives starting with `@` search common repositories of developer documentation:
+    - @mdn searches articles from https://developer.mozilla.org/
+    - @caniuse searches browser compatibility data from https://caniuse.com/
+    - ...more to come
+
 
 ## Installation (BETA)
 
@@ -27,3 +39,14 @@ After building, the `dist/` directory can be installed manually in Chrome as fol
 - Ensure "Developer Mode" is toggled on in the top right corner
 - Click "Load Unpacked" in the top left corner
 - Select the `calcium-extension/dist/` directory
+
+Note that you will need to restart your browser before the extension is able to properly index all of your tabs.
+
+## Contributing
+
+Right now, the best way to contribute is to try out Calcium and share your feedback.
+
+Directives starting with `@` will likely be expanded, so if you have ideas for a specific data source or behavior that you feel would be helpful to integrate into Calcium, submit a proposal via a Github Issue or submit a PR following the template of the existing `adapters/`. Please bear in mind:
+- Any data source used must be publically available on the internet and licensed appropriately
+- Directives should generally be applicable to a wide audience of developers (very niche use cases will be rejected)
+- The interface for building adapters is unstable. I would like to pilot a few good use cases and define the appropriate constraints before creating many specialized adapters.

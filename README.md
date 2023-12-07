@@ -1,4 +1,4 @@
-![Calcium](docs/logo.png)
+![Calcium](docs/banner.png)
 
 🔎 Fuzzy-find on browser tabs, bookmarks, history
 

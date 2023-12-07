@@ -24,7 +24,6 @@
     "vite-plugin-wasm": "^3.2.2"
   },
   "dependencies": {
-    "calcium-search": "file:../calcium-search/pkg",
     "minisearch": "^6.1.0"
   }
 }

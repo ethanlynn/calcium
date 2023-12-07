@@ -4,6 +4,8 @@
 
 🏃 Search and jump to common developer docs
 
-## Coming soon...
+Coming soon...
 
 🤖 AI clipboard
+
+![Calcium Demo](calcium-site/static/demo.gif)

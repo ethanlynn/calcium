@@ -1,6 +1,4 @@
-# Calcium
-
-A browser extension for devs.
+![Calcium](docs/logo.png)
 
 🔎 Fuzzy-find on browser tabs, bookmarks, history
 

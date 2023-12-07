@@ -5,12 +5,12 @@ type SearchItem = {
   id: number;
   url: string;
   title: string;
-  iconUrl: string;
+  iconUrl?: string;
   text?: string;
 };
 
 export class BrowserAdapter extends Adapter {
-  searchIndex: MiniSearch<SearchItem>;
+  searchIndex?: MiniSearch<SearchItem>;
 
   async init() {
     this.searchIndex = new MiniSearch({
@@ -27,18 +27,18 @@ export class BrowserAdapter extends Adapter {
     });
     const searchItems = await Promise.all(
       tabs.map(async (tab) => {
-        let text: string;
+        let text: string | undefined;
         try {
-          text = await chrome.tabs.sendMessage(tab.id, {
+          text = await chrome.tabs.sendMessage(tab.id!, {
             type: "GET_TEXT",
           });
         } catch {
           text = undefined;
         }
         return {
-          id: tab.id,
-          url: tab.url,
-          title: tab.title,
+          id: tab.id!,
+          url: tab.url!,
+          title: tab.title!,
           iconUrl: tab.favIconUrl,
           text,
         };
@@ -48,15 +48,17 @@ export class BrowserAdapter extends Adapter {
   }
 
   async search({ pattern, limit }: SearchOptions): Promise<SearchResult[]> {
-    return this.searchIndex
-      .search(pattern)
-      .slice(0, limit)
-      .map((item) => ({
-        url: item.url,
-        title: item.title,
-        iconUrl: item.iconUrl,
-        preview: item.text,
-        acceptAction: { type: "tab", tabId: item.id },
-      }));
+    return (
+      this.searchIndex
+        ?.search(pattern)
+        .slice(0, limit)
+        .map((item) => ({
+          url: item.url,
+          title: item.title,
+          iconUrl: item.iconUrl,
+          preview: item.text,
+          acceptAction: { type: "tab", tabId: item.id },
+        })) ?? []
+    );
   }
 }

@@ -81,7 +81,7 @@ const miniSearchOptions = {
 
 export class CanIUseAdapter extends Adapter {
   cacheDuration: number;
-  searchIndex: MiniSearch<CanIUseSearchItem>;
+  searchIndex?: MiniSearch<CanIUseSearchItem>;
 
   constructor({
     cacheDuration = 1000 * 60 * 60 * 24,
@@ -125,20 +125,22 @@ export class CanIUseAdapter extends Adapter {
   }
 
   async search({ pattern, limit }: SearchOptions): Promise<SearchResult[]> {
-    return this.searchIndex
-      .search(pattern)
-      .slice(0, limit)
-      .map((item) => {
-        const url = `${canIUseUrl}/${item.id}`;
-        return {
-          iconUrl: `${canIUseUrl}/img/favicon-128.png`,
-          title: item.title,
-          url,
-          acceptAction: {
-            type: "link",
-            href: url,
-          },
-        };
-      });
+    return (
+      this.searchIndex
+        ?.search(pattern)
+        .slice(0, limit)
+        .map((item) => {
+          const url = `${canIUseUrl}/${item.id}`;
+          return {
+            iconUrl: `${canIUseUrl}/img/favicon-128.png`,
+            title: item.title,
+            url,
+            acceptAction: {
+              type: "link",
+              href: url,
+            },
+          };
+        }) ?? []
+    );
   }
 }

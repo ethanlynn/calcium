@@ -25,7 +25,7 @@ const miniSearchOptions = {
 
 export class MDNAdapter extends Adapter {
   cacheDuration: number;
-  searchIndex: MiniSearch<MDNSearchItem>;
+  searchIndex?: MiniSearch<MDNSearchItem>;
 
   constructor({ cacheDuration = 1000 * 60 * 60 * 24 }: MDNAdapterOptions = {}) {
     super();
@@ -62,17 +62,19 @@ export class MDNAdapter extends Adapter {
   }
 
   async search({ pattern, limit }: SearchOptions): Promise<SearchResult[]> {
-    return this.searchIndex
-      .search(pattern)
-      .slice(0, limit)
-      .map((item) => ({
-        iconUrl: `${mdnUrl}/favicon.ico`,
-        title: item.title,
-        url: item.url,
-        acceptAction: {
-          type: "link",
-          href: `${mdnUrl}${item.url}`,
-        },
-      }));
+    return (
+      this.searchIndex
+        ?.search(pattern)
+        .slice(0, limit)
+        .map((item) => ({
+          iconUrl: `${mdnUrl}/favicon.ico`,
+          title: item.title,
+          url: item.url,
+          acceptAction: {
+            type: "link",
+            href: `${mdnUrl}${item.url}`,
+          },
+        })) ?? []
+    );
   }
 }

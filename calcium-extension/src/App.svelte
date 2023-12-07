@@ -16,7 +16,7 @@
     npm: { adapter: new NPMAdapter(), initialized: false },
   };
 
-  let searchInput = undefined;
+  let searchInput: HTMLInputElement;
   let searchInputValue = "";
   let searchInputHighlighted = "";
 

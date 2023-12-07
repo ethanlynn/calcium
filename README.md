@@ -10,7 +10,7 @@ Coming soon...
 
 🤖 AI clipboard
 
-## Installing (BETA)
+## Installation (BETA)
 
 Calcium is in beta and currently only supports Chrome. It is not yet published to the Chrome Web Store. If you'd still like to try it out and give your feedback, you can build and install the extension locally assuming you have a Node.js environment configured (>=LTS):
 

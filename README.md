@@ -47,6 +47,6 @@ Note that you will need to restart your browser before the extension is able to 
 Right now, the best way to contribute is to try out Calcium and share your feedback.
 
 Directives starting with `@` will likely be expanded, so if you have ideas for a specific data source or behavior that you feel would be helpful to integrate into Calcium, submit a proposal via a Github Issue or submit a PR following the template of the existing `adapters/`. Please bear in mind:
-- Any data source used must be publically available on the internet and licensed appropriately
+- Any data source used must be publicly available on the internet and licensed appropriately
 - Directives should generally be applicable to a wide audience of developers (very niche use cases will be rejected)
 - The interface for building adapters is unstable. I would like to pilot a few good use cases and define the appropriate constraints before creating many specialized adapters.

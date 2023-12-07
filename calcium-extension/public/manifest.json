@@ -3,7 +3,9 @@
   "name": "Calcium",
   "description": "A shell for the web.",
   "version": "1.0",
-  "icons": {},
+  "icons": {
+    "128": "logo.png"
+  },
   "action": {
     "default_popup": "index.html"
   },

@@ -4,4 +4,6 @@
 
 🏃 Search and jump to common developer docs
 
-❤️ Integrate with your favorite platforms
+## Coming soon...
+
+🤖 AI clipboard
